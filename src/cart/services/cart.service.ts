@@ -1,55 +1,82 @@
 import { Injectable } from '@nestjs/common';
+import { QueryResult } from 'pg';
+import { poolQuery } from '../../db/index';
 
 import { v4 } from 'uuid';
 
-import { Cart } from '../models';
+import { Cart, CartItem } from '../models';
 
 @Injectable()
 export class CartService {
   private userCarts: Record<string, Cart> = {};
 
-  findByUserId(userId: string): Cart {
-    return this.userCarts[ userId ];
+  async findByUserId(userId: string): Promise<Cart> {
+    const selectCartsById = 'SELECT * FROM carts WHERE user_id=$1';
+    const values = [userId];
+    const cartOfUser: QueryResult = await poolQuery(selectCartsById, values);
+    if(!cartOfUser || cartOfUser.rowCount < 1) {
+      return null;
+    }
+    const selectCartItems = 'SELECT * FROM cart_items WHERE cart_id=$1';
+    const cartItems: QueryResult = await poolQuery(selectCartItems, [cartOfUser?.rows?.[0].id]);
+    const cart = {
+      id: cartOfUser?.rows[0]?.id,
+      items: (cartItems?.rows?.length > 0) ? cartItems.rows.map(cartItem => ({
+        product: { ...cartItem },
+        count: cartItem.count,
+      })) : [],
+    };
+    return cart;
   }
 
-  createByUserId(userId: string) {
-    const id = v4(v4());
-    const userCart = {
-      id,
+  async createByUserId(userId: string): Promise<Cart> {
+    const insertCart = `
+    INSERT INTO carts (user_id, id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING *`;
+    const values = [userId, v4(v4()), new Date(), new Date()];
+    const newCart: QueryResult = await poolQuery(insertCart, values);
+    console.log('newCart', newCart);
+    return {
+      id: newCart?.rows[0]?.id,
       items: [],
     };
-
-    this.userCarts[ userId ] = userCart;
-
-    return userCart;
   }
 
-  findOrCreateByUserId(userId: string): Cart {
-    const userCart = this.findByUserId(userId);
+  async findOrCreateByUserId(userId: string): Promise<Cart> {
+    const userCart = await this.findByUserId(userId);
 
     if (userCart) {
       return userCart;
     }
 
-    return this.createByUserId(userId);
+    return await this.createByUserId(userId);
   }
 
-  updateByUserId(userId: string, { items }: Cart): Cart {
-    const { id, ...rest } = this.findOrCreateByUserId(userId);
+  async updateByUserId(userId: string, items : CartItem[]): Promise<Cart> {
+    const { id } = await this.findOrCreateByUserId(userId);
 
-    const updatedCart = {
-      id,
-      ...rest,
-      items: [ ...items ],
+    let updatedCart: QueryResult;
+    for(const item of items) {
+      const values = [id, item.product.id, item.count];
+      const updateCart = 'UPDATE cart_items SET count=$3 WHERE cart_id=$1 AND product_id=$2';
+      updatedCart= await poolQuery(updateCart, values);
     }
 
-    this.userCarts[ userId ] = { ...updatedCart };
+    // if cart does not have products
+    if(updatedCart.rowCount < 0) {
+      return null;
+    }
 
-    return { ...updatedCart };
+    return { 
+      id: updatedCart?.rows[0]?.id,
+      items: (updatedCart?.rows?.length > 0) ? updatedCart.rows.map(cartItem => ({
+      product: { ...cartItem },
+      count: cartItem.count,
+      })) : []};
   }
 
-  removeByUserId(userId): void {
-    this.userCarts[ userId ] = null;
+  async removeByUserId(userId): Promise<void> {
+    const deleteCart = `DELETE FROM carts WHERE user_id=$1`
+    await poolQuery(deleteCart, [userId]);
   }
 
 }

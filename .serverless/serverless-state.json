@@ -7,9 +7,16 @@
     "provider": {
       "name": "aws",
       "runtime": "nodejs14.x",
-      "stage": "dev",
       "region": "us-east-1",
+      "stage": "dev",
       "versionFunctions": true,
+      "environment": {
+        "DB_USER_NAME": "postgres",
+        "DB_HOST": "rds-database-1.c6x6vn85817v.us-east-1.rds.amazonaws.com",
+        "DB_NAME": "database1",
+        "DB_PASSWORD": "testtest123",
+        "DB_PORT": "5432"
+      },
       "compiledCloudFormationTemplate": {
         "AWSTemplateFormatVersion": "2010-09-09",
         "Description": "The AWS CloudFormation template for this Serverless application",
@@ -174,13 +181,22 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/rs-cart-api-service/dev/1679305270075-2023-03-20T09:41:10.075Z/rs-cart-api-service.zip"
+                "S3Key": "serverless/rs-cart-api-service/dev/1679380469513-2023-03-21T06:34:29.513Z/rs-cart-api-service.zip"
               },
-              "Handler": "dist/main.handler",
+              "Handler": "_optimize/rs-cart-api-service-dev-main/dist/main.handler",
               "Runtime": "nodejs14.x",
               "FunctionName": "rs-cart-api-service-dev-main",
               "MemorySize": 1024,
               "Timeout": 6,
+              "Environment": {
+                "Variables": {
+                  "DB_USER_NAME": "postgres",
+                  "DB_HOST": "rds-database-1.c6x6vn85817v.us-east-1.rds.amazonaws.com",
+                  "DB_NAME": "database1",
+                  "DB_PASSWORD": "testtest123",
+                  "DB_PORT": "5432"
+                }
+              },
               "Role": {
                 "Fn::GetAtt": [
                   "IamRoleLambdaExecution",
@@ -192,14 +208,14 @@
               "MainLogGroup"
             ]
           },
-          "MainLambdaVersionMM5glRk63I3Z7RK80TVYbiGDSqoYrafZHWvOxoGxIu4": {
+          "MainLambdaVersionJspeO0Gru9kMqVlb9sQXfKVAwCj7uNwZasi5PnBs": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "MainLambdaFunction"
               },
-              "CodeSha256": "Xmvr4obF+4dTcIrNLVc24/vh//o5r85R+sMSFDqSZFc="
+              "CodeSha256": "+lyexZ67FLVD8QNWmBeQA3cbxHc8+QXBJ6maIAbNlng="
             }
           },
           "ApiGatewayRestApi": {
@@ -214,7 +230,7 @@
               "Policy": ""
             }
           },
-          "ApiGatewayResourceProxyVar": {
+          "ApiGatewayResourceApi": {
             "Type": "AWS::ApiGateway::Resource",
             "Properties": {
               "ParentId": {
@@ -223,22 +239,79 @@
                   "RootResourceId"
                 ]
               },
-              "PathPart": "{proxy+}",
+              "PathPart": "api",
               "RestApiId": {
                 "Ref": "ApiGatewayRestApi"
               }
             }
           },
-          "ApiGatewayMethodAny": {
+          "ApiGatewayResourceApiProfile": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceApi"
+              },
+              "PathPart": "profile",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceApiProfileCart": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceApiProfile"
+              },
+              "PathPart": "cart",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceApiProfileCartCheckout": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceApiProfileCart"
+              },
+              "PathPart": "checkout",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceApiAuth": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceApi"
+              },
+              "PathPart": "auth",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayResourceApiAuthLogin": {
+            "Type": "AWS::ApiGateway::Resource",
+            "Properties": {
+              "ParentId": {
+                "Ref": "ApiGatewayResourceApiAuth"
+              },
+              "PathPart": "login",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              }
+            }
+          },
+          "ApiGatewayMethodApiProfileGet": {
             "Type": "AWS::ApiGateway::Method",
             "Properties": {
-              "HttpMethod": "ANY",
+              "HttpMethod": "GET",
               "RequestParameters": {},
               "ResourceId": {
-                "Fn::GetAtt": [
-                  "ApiGatewayRestApi",
-                  "RootResourceId"
-                ]
+                "Ref": "ApiGatewayResourceApiProfile"
               },
               "RestApiId": {
                 "Ref": "ApiGatewayRestApi"
@@ -278,13 +351,13 @@
               "MainLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayMethodProxyVarAny": {
+          "ApiGatewayMethodApiAuthLoginPost": {
             "Type": "AWS::ApiGateway::Method",
             "Properties": {
-              "HttpMethod": "ANY",
+              "HttpMethod": "POST",
               "RequestParameters": {},
               "ResourceId": {
-                "Ref": "ApiGatewayResourceProxyVar"
+                "Ref": "ApiGatewayResourceApiAuthLogin"
               },
               "RestApiId": {
                 "Ref": "ApiGatewayRestApi"
@@ -324,7 +397,191 @@
               "MainLambdaPermissionApiGateway"
             ]
           },
-          "ApiGatewayDeployment1679305240993": {
+          "ApiGatewayMethodApiProfileCartGet": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "GET",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceApiProfileCart"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "MainLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "MainLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodApiProfileCartPut": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "PUT",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceApiProfileCart"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "MainLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "MainLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodApiProfileCartDelete": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "DELETE",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceApiProfileCart"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "MainLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "MainLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayMethodApiProfileCartCheckoutPost": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "POST",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Ref": "ApiGatewayResourceApiProfileCartCheckout"
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "NONE",
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "MainLambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": [
+              "MainLambdaPermissionApiGateway"
+            ]
+          },
+          "ApiGatewayDeployment1679380442980": {
             "Type": "AWS::ApiGateway::Deployment",
             "Properties": {
               "RestApiId": {
@@ -333,8 +590,12 @@
               "StageName": "dev"
             },
             "DependsOn": [
-              "ApiGatewayMethodAny",
-              "ApiGatewayMethodProxyVarAny"
+              "ApiGatewayMethodApiProfileGet",
+              "ApiGatewayMethodApiAuthLoginPost",
+              "ApiGatewayMethodApiProfileCartGet",
+              "ApiGatewayMethodApiProfileCartPut",
+              "ApiGatewayMethodApiProfileCartDelete",
+              "ApiGatewayMethodApiProfileCartCheckoutPost"
             ]
           },
           "MainLambdaPermissionApiGateway": {
@@ -387,7 +648,7 @@
           "MainLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "MainLambdaVersionMM5glRk63I3Z7RK80TVYbiGDSqoYrafZHWvOxoGxIu4"
+              "Ref": "MainLambdaVersionJspeO0Gru9kMqVlb9sQXfKVAwCj7uNwZasi5PnBs"
             },
             "Export": {
               "Name": "sls-rs-cart-api-service-dev-MainLambdaFunctionQualifiedArn"
@@ -506,41 +767,79 @@
       "vpc": {}
     },
     "plugins": [
-      "serverless-offline"
+      "serverless-offline",
+      "serverless-dotenv-plugin",
+      "serverless-plugin-optimize"
     ],
     "pluginsData": {},
     "functions": {
       "main": {
-        "handler": "dist/main.handler",
+        "handler": "_optimize/rs-cart-api-service-dev-main/dist/main.handler",
         "events": [
           {
             "http": {
-              "method": "any",
-              "path": "",
+              "method": "get",
+              "path": "api/profile",
               "integration": "AWS_PROXY"
             }
           },
           {
             "http": {
-              "method": "any",
-              "path": "{proxy+}",
+              "method": "post",
+              "path": "api/auth/login",
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "method": "get",
+              "path": "api/profile/cart",
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "method": "put",
+              "path": "api/profile/cart",
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "method": "delete",
+              "path": "api/profile/cart",
+              "integration": "AWS_PROXY"
+            }
+          },
+          {
+            "http": {
+              "method": "post",
+              "path": "api/profile/cart/checkout",
               "integration": "AWS_PROXY"
             }
           }
         ],
         "name": "rs-cart-api-service-dev-main",
-        "package": {},
+        "package": {
+          "exclude": [
+            "**"
+          ],
+          "include": [
+            "_optimize/rs-cart-api-service-dev-main/**"
+          ]
+        },
         "memory": 1024,
         "timeout": 6,
         "runtime": "nodejs14.x",
         "vpc": {},
-        "versionLogicalId": "MainLambdaVersionMM5glRk63I3Z7RK80TVYbiGDSqoYrafZHWvOxoGxIu4"
+        "versionLogicalId": "MainLambdaVersionJspeO0Gru9kMqVlb9sQXfKVAwCj7uNwZasi5PnBs"
       }
     },
     "configValidationMode": "warn",
     "serviceFilename": "serverless.yml",
     "initialServerlessConfig": {
       "service": "rs-cart-api-service",
+      "useDotenv": true,
       "plugins": {
         "$ref": "$[\"service\"][\"plugins\"]"
       },
@@ -556,7 +855,7 @@
     "artifact": "C:\\Users\\Vasile_Dragos\\Desktop\\CloudX AWS Practitioner for JS #4\\app\\New folder\\rs-cart-api\\.serverless\\rs-cart-api-service.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/rs-cart-api-service/dev/1679305270075-2023-03-20T09:41:10.075Z",
+    "artifactDirectoryName": "serverless/rs-cart-api-service/dev/1679380469513-2023-03-21T06:34:29.513Z",
     "artifact": "rs-cart-api-service.zip"
   }
 }
