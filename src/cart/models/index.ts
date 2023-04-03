@@ -5,6 +5,11 @@ export type Product = {
   price: number,
 };
 
+export enum Status {
+  OPEN = 'OPEN',
+  ORDERED = 'ORDERED'
+}
+
 
 export type CartItem = {
   product: Product,
@@ -14,4 +19,5 @@ export type CartItem = {
 export type Cart = {
   id: string,
   items: CartItem[],
+  status: Status
 }
