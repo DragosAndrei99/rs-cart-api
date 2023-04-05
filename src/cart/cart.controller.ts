@@ -59,8 +59,8 @@ export class CartController {
   // @UseGuards(JwtAuthGuard)
   // @UseGuards(BasicAuthGuard)
   @Post('checkout')
-  async checkout(@Req() req: AppRequest, @Body() body) {
-    const userId = getUserIdFromRequest(req);
+  async checkout(@Req() req, @Body() body) {
+    const userId = req.query.user;
     const cart = await this.cartService.findByUserId(userId);
 
     if (!(cart && cart.items.length)) {

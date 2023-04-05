@@ -40,15 +40,15 @@ export class CartService {
   async createByUserId(userId: string): Promise<Cart> {
     try {
       const insertCart = `
-      INSERT INTO carts (user_id, id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING *`;
-      const values = [userId, v4(v4()), new Date(), new Date()];
+      INSERT INTO carts (user_id, id, created_at, updated_at, status) VALUES ($1, $2, $3, $4, $5) RETURNING *`;
+      const values = [userId, v4(v4()), new Date(), new Date(), Status.OPEN];
       const newCart: QueryResult = await poolQuery(insertCart, values);
       console.log('newCart', newCart);
   
       const response = {
         id: newCart?.rows[0]?.id,
         items: [],
-        status: Status.OPEN
+        status: newCart?.rows[0].status
       }
   
       return response;
